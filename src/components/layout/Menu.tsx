@@ -50,6 +50,7 @@ function useNav() {
   const pathname = usePathname();
   const { profile, signOut } = useTriage();
 
+  // 'profile' n'est plus dans MENU_ITEMS. 'home' est masqué côté desktop (le logo y ramène).
   const items = MENU_ITEMS.filter(
     (item) => !item.roles || (profile && item.roles.includes(profile.role)),
   );
@@ -363,57 +364,59 @@ function DeskLang() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  DESKTOP — logo à gauche · liens + actions groupés à droite        */
+/*  DESKTOP — space-between : logo | liens | actions équidistants     */
 /* ------------------------------------------------------------------ */
 
 function DesktopMenu({ nav }: { nav: Nav }) {
   const { items, cta, account, isActive, go } = nav;
   const [openKey, setOpenKey] = useState<string | null>(null);
 
+  // Pas de lien « Accueil » ici : le logo ramène à l'accueil.
   const links = items.filter((item) => item.key !== 'home');
 
   return (
     <BarShell>
       <View style={styles.deskRow}>
+        {/* 1 — Logo à gauche */}
         <Logo size={100} />
 
-        <View style={styles.deskRight}>
-          <View style={styles.deskLinks}>
-            {links.map((item) =>
-              item.children?.length ? (
-                <DeskGroup
-                  key={item.key}
-                  item={item}
-                  open={openKey === item.key}
-                  active={item.children.some((child) => isActive(child.href))}
-                  isActive={isActive}
-                  onOpen={() => setOpenKey(item.key)}
-                  onClose={() => setOpenKey(null)}
-                  onGo={(href) => {
-                    setOpenKey(null);
-                    go(href);
-                  }}
-                />
-              ) : (
-                <DeskLink
-                  key={item.key}
-                  item={item}
-                  active={isActive(item.href)}
-                  onPress={() => item.href && go(item.href)}
-                />
-              ),
-            )}
-          </View>
+        {/* 2 — Liens au centre (gap égal gauche/droite via space-between) */}
+        <View style={styles.deskLinks}>
+          {links.map((item) =>
+            item.children?.length ? (
+              <DeskGroup
+                key={item.key}
+                item={item}
+                open={openKey === item.key}
+                active={item.children.some((child) => isActive(child.href))}
+                isActive={isActive}
+                onOpen={() => setOpenKey(item.key)}
+                onClose={() => setOpenKey(null)}
+                onGo={(href) => {
+                  setOpenKey(null);
+                  go(href);
+                }}
+              />
+            ) : (
+              <DeskLink
+                key={item.key}
+                item={item}
+                active={isActive(item.href)}
+                onPress={() => item.href && go(item.href)}
+              />
+            ),
+          )}
+        </View>
 
-          <View style={styles.deskActions}>
-            <DeskLang />
-            <AccountButton
-              icon={account.icon}
-              label={account.label}
-              onPress={() => go(account.href)}
-            />
-            <CtaPill desktop label={cta.label} icon={cta.icon} onPress={() => go(cta.href)} />
-          </View>
+        {/* 3 — Actions à droite */}
+        <View style={styles.deskActions}>
+          <DeskLang />
+          <AccountButton
+            icon={account.icon}
+            label={account.label}
+            onPress={() => go(account.href)}
+          />
+          <CtaPill desktop label={cta.label} icon={cta.icon} onPress={() => go(cta.href)} />
         </View>
       </View>
     </BarShell>
@@ -926,27 +929,25 @@ const styles = StyleSheet.create({
   },
   langNameOn: { fontFamily: 'Comfortaa_700Bold' },
 
-  /* ---- Desktop row ---- */
+  /* ---- Desktop row : 3 blocs équidistants via space-between ---- */
   deskRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 24,
-    minHeight: 124, // +20 px : accueille le logo 100
+    minHeight: 124,
     paddingHorizontal: 32,
-  },
-  deskRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 24,
-    flexShrink: 1,
   },
   deskLinks: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 108,
   },
-  deskActions: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 0 },
+  deskActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexShrink: 0,
+  },
   group: { position: 'relative', zIndex: 40 },
 
   /* ---- Lien de nav : tint doux sans bordure ---- */
@@ -1017,7 +1018,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    minHeight: 96, // +12 px : accueille le logo 72
+    minHeight: 96,
   },
   mobLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   mobActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },

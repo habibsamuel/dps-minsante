@@ -1,6 +1,8 @@
 export type Doctor = {
   id: string;
   name: string;
+  /** URL ou source locale de la photo de profil. */
+  avatar: string;
   specialty: 'Généraliste' | 'Pédiatre' | 'Gynécologie' | 'Dermatologie';
   city: string;
   facility: string;
@@ -17,6 +19,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd1',
     name: 'Dr Amina Ngo Bassong',
+    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
     specialty: 'Généraliste',
     city: 'Douala',
     facility: 'Clinique Bonanjo',
@@ -31,6 +34,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd2',
     name: 'Dr Paul Etoundi',
+    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
     specialty: 'Pédiatre',
     city: 'Yaoundé',
     facility: 'CHU de Yaoundé',
@@ -45,6 +49,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd3',
     name: 'Dr Sandrine Mbarga',
+    avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
     specialty: 'Gynécologie',
     city: 'Yaoundé',
     facility: 'Hôpital Central',
@@ -59,6 +64,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd4',
     name: 'Dr Ibrahim Sali',
+    avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
     specialty: 'Généraliste',
     city: 'Garoua',
     facility: 'Hôpital Régional de Garoua',
@@ -73,6 +79,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd5',
     name: 'Dr Chantal Tchoumi',
+    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
     specialty: 'Généraliste',
     city: 'Bafoussam',
     facility: 'Clinique de la Famille',
@@ -87,6 +94,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd6',
     name: 'Dr Grace Ayuk',
+    avatar: 'https://randomuser.me/api/portraits/women/17.jpg',
     specialty: 'Pédiatre',
     city: 'Buea',
     facility: 'Buea Regional Hospital',
@@ -101,6 +109,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd7',
     name: 'Dr Serge Kana',
+    avatar: 'https://randomuser.me/api/portraits/men/52.jpg',
     specialty: 'Dermatologie',
     city: 'Douala',
     facility: 'Centre Médical Akwa',
@@ -115,6 +124,7 @@ export const doctors: Doctor[] = [
   {
     id: 'd8',
     name: 'Dr Estelle Ngo',
+    avatar: 'https://randomuser.me/api/portraits/women/90.jpg',
     specialty: 'Généraliste',
     city: 'Kribi',
     facility: 'Poste de santé de Mpangou',

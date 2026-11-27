@@ -7,7 +7,7 @@ import type { Role } from '@/store';
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /* ------------------------------------------------------------------ */
-/*  Menu                                                               */
+/*  Menu principal                                                     */
 /* ------------------------------------------------------------------ */
 
 export type MenuLeaf = {
@@ -32,7 +32,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'home', label: 'Accueil', icon: 'home', href: '/' },
   { key: 'triage', label: 'Évaluation', icon: 'pulse', href: '/triage' },
   { key: 'doctors', label: 'Médecins', icon: 'people', href: '/medecins' },
-  { key: 'history', label: 'Mes demandes', icon: 'document-text', href: '/historique' },
+  { key: 'community', label: 'Communauté', icon: 'chatbubbles', href: '/communaute' },
   {
     key: 'pro',
     label: 'Espace médecin',
@@ -40,7 +40,10 @@ export const MENU_ITEMS: MenuItem[] = [
     href: '/espace-medecin',
     roles: ['medecin'],
   },
-  { key: 'profile', label: 'Mon profil', icon: 'person', href: '/profil' },
+
+  // 'profile' est retiré du menu : accessible via le bouton compte rond (header)
+  // et via le lien "Mon profil" du footer.
+  // 'historique' est retiré du menu : accessible via le footer et depuis la page profil.
 
   // Exemple de sous-menu (à activer quand les écrans existent) :
   // {
@@ -78,22 +81,17 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     links: [
       { key: 'triage', label: 'Évaluation des symptômes', href: '/triage' },
       { key: 'doctors', label: 'Trouver un médecin', href: '/medecins' },
-      { key: 'history', label: 'Mes demandes', href: '/historique' },
+      { key: 'community', label: 'Communauté', href: '/communaute' },
     ],
   },
   {
     key: 'account',
     title: 'Mon espace',
     links: [
+      { key: 'history', label: 'Mes demandes', href: '/historique' },
       { key: 'profile', label: 'Mon profil', href: '/profil' },
       { key: 'auth', label: 'Connexion / Inscription', href: '/auth' },
       { key: 'pro', label: 'Espace médecin', href: '/espace-medecin' },
     ],
   },
-];
-
-/** Ancien format (liste plate). N'est plus utilisé par le Footer : tu peux le supprimer. */
-export const FOOTER_LINKS: FooterLink[] = [
-  { key: 'profile', label: 'Profil', href: '/profil' },
-  { key: 'history', label: 'Mes demandes', href: '/historique' },
 ];
