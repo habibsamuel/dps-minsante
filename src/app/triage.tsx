@@ -1,17 +1,43 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import {
-  Button,
-  CheckCard,
-  OptionCard,
-  Progress,
-  Screen,
-} from '@/components/ui';
-import { evaluate, questions, type Answers } from '@/lib/triage';
+import { Master } from '@/components/layout';
+import { Button, CheckCard, OptionCard, Progress } from '@/components/ui';
+import type { IconName } from '@/lib/navigation';
+import { evaluate, questions, type Answers, type Question } from '@/lib/triage';
 import { useTriage } from '@/store';
 import { colors, font, space } from '@/theme';
+
+/* ------------------------------------------------------------------ */
+/*  Catégories                                                         */
+/* ------------------------------------------------------------------ */
+
+const CATEGORIES: Record<string, { label: string; icon: IconName }> = {
+  pour_qui: { label: 'Pour qui', icon: 'people-outline' },
+  age: { label: 'Âge', icon: 'calendar-outline' },
+  sexe: { label: 'Sexe', icon: 'person-outline' },
+  symptome: { label: 'Symptôme', icon: 'pulse' },
+  duree: { label: 'Durée', icon: 'time-outline' },
+  intensite: { label: 'Intensité', icon: 'speedometer-outline' },
+  fievre: { label: 'Fièvre', icon: 'thermometer-outline' },
+  alertes: { label: "Signes d'alerte", icon: 'warning-outline' },
+  antecedents: { label: 'Antécédents', icon: 'medical-outline' },
+};
+
+const FALLBACK: { label: string; icon: IconName } = {
+  label: 'Question',
+  icon: 'help-circle-outline',
+};
+
+function getCategory(q: Question) {
+  return CATEGORIES[q.id] ?? FALLBACK;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Écran                                                              */
+/* ------------------------------------------------------------------ */
 
 export default function TriageScreen() {
   const router = useRouter();
@@ -22,7 +48,6 @@ export default function TriageScreen() {
   const question = questions[index];
   const isLast = index === questions.length - 1;
   const currentValue = question ? answers[question.id] : undefined;
-
   const multiValue = Array.isArray(currentValue) ? currentValue : [];
 
   function finish(finalAnswers: Answers) {
@@ -47,10 +72,10 @@ export default function TriageScreen() {
   }
 
   function selectSingle(value: string) {
-    if (lock.current) return;
+    if (lock.current || !question) return;
     lock.current = true;
-    const merged: Answers = { ...answers, [question!.id]: value };
-    setAnswer(question!.id, value);
+    const merged: Answers = { ...answers, [question.id]: value };
+    setAnswer(question.id, value);
     setTimeout(() => {
       if (isLast) {
         finish(merged);
@@ -87,8 +112,12 @@ export default function TriageScreen() {
 
   if (!question) return null;
 
+  const category = getCategory(question);
+  const progress = (index + 1) / questions.length;
+
   return (
-    <Screen
+    <Master
+      title="Évaluation"
       footer={
         <View style={styles.footerRow}>
           <View style={styles.footerBack}>
@@ -105,66 +134,155 @@ export default function TriageScreen() {
         </View>
       }
     >
-      <View style={styles.progressHeader}>
-        <Text style={styles.progressLabel}>
-          Question {index + 1} sur {questions.length}
-        </Text>
-        <Text style={styles.progressHint}>
-          {question.optional ? 'Facultatif' : 'Obligatoire'}
-        </Text>
-      </View>
-      <Progress value={(index + 1) / questions.length} />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.stepPill}>
+            <Text style={styles.stepPillText}>
+              Étape {index + 1} / {questions.length}
+            </Text>
+          </View>
+          {question.optional ? (
+            <View style={styles.optionalPill}>
+              <Text style={styles.optionalPillText}>Facultatif</Text>
+            </View>
+          ) : null}
+        </View>
 
-      <Text style={styles.question}>{question.title}</Text>
-      {question.hint ? <Text style={styles.hint}>{question.hint}</Text> : null}
+        <Progress value={progress} />
 
-      <View style={styles.options}>
-        {question.options.map((option) => {
-          if (question.type === 'multi') {
+        <View style={styles.category}>
+          <Ionicons name={category.icon} size={13} color={colors.primary} />
+          <Text style={styles.categoryText}>{category.label}</Text>
+        </View>
+
+        <Text style={styles.question}>{question.title}</Text>
+        {question.hint ? <Text style={styles.hint}>{question.hint}</Text> : null}
+
+        <View style={styles.options}>
+          {question.options.map((option) => {
+            if (question.type === 'multi') {
+              return (
+                <CheckCard
+                  key={option.value}
+                  label={option.label}
+                  selected={multiValue.includes(option.value)}
+                  onPress={() => toggleMulti(option.value)}
+                />
+              );
+            }
             return (
-              <CheckCard
+              <OptionCard
                 key={option.value}
                 label={option.label}
-                selected={multiValue.includes(option.value)}
-                onPress={() => toggleMulti(option.value)}
+                sub={option.sub}
+                selected={currentValue === option.value}
+                onPress={() => selectSingle(option.value)}
               />
             );
-          }
-          return (
-            <OptionCard
-              key={option.value}
-              label={option.label}
-              sub={option.sub}
-              selected={currentValue === option.value}
-              onPress={() => selectSingle(option.value)}
-            />
-          );
-        })}
-      </View>
+          })}
+        </View>
 
-      {question.optional ? (
-        <Text style={styles.skipHint}>
-          Tu peux continuer sans rien sélectionner.
-        </Text>
-      ) : null}
-    </Screen>
+        {question.optional ? (
+          <Text style={styles.skipHint}>
+            Tu peux continuer sans rien sélectionner.
+          </Text>
+        ) : null}
+
+        {question.type === 'multi' && multiValue.length > 0 ? (
+          <Text style={styles.selectedHint}>
+            {multiValue.length} sélectionné{multiValue.length > 1 ? 's' : ''}
+          </Text>
+        ) : null}
+      </View>
+    </Master>
   );
 }
 
 const styles = StyleSheet.create({
-  progressHeader: {
+  container: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
     marginBottom: space.sm,
   },
-  progressLabel: { ...font.label, color: colors.muted },
-  progressHint: { ...font.small, color: colors.muted, fontSize: 12 },
-  question: { ...font.h2, color: colors.ink, marginTop: space.xl },
-  hint: { ...font.small, color: colors.inkSoft, marginTop: space.sm },
-  options: { marginTop: space.xl },
-  skipHint: { ...font.small, color: colors.muted, marginTop: space.sm, textAlign: 'center' },
-  footerRow: { flexDirection: 'row', gap: space.md },
+  stepPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.primarySoft,
+  },
+  stepPillText: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 11,
+    color: colors.primary,
+    letterSpacing: 0.3,
+  },
+  optionalPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.sandDeep,
+  },
+  optionalPillText: {
+    fontFamily: 'Comfortaa_600SemiBold',
+    fontSize: 11,
+    color: colors.inkSoft,
+  },
+  category: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: space.xl,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.primarySoft,
+  },
+  categoryText: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 10,
+    color: colors.primary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  question: {
+    ...font.h2,
+    color: colors.ink,
+    marginTop: space.md,
+  },
+  hint: {
+    ...font.small,
+    color: colors.inkSoft,
+    marginTop: space.sm,
+    lineHeight: 20,
+  },
+  options: {
+    marginTop: space.xl,
+    gap: space.sm,
+  },
+  skipHint: {
+    ...font.small,
+    color: colors.muted,
+    marginTop: space.md,
+    textAlign: 'center',
+  },
+  selectedHint: {
+    fontFamily: 'Comfortaa_600SemiBold',
+    fontSize: 12,
+    color: colors.primary,
+    textAlign: 'center',
+    marginTop: space.md,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: space.md,
+  },
   footerBack: { flex: 1 },
   footerNext: { flex: 2 },
 });
