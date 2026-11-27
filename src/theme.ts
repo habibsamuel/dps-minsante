@@ -65,17 +65,54 @@ export const shadow = {
   },
 } as const;
 
+/**
+ * Typographie : Comfortaa (arrondie, chaleureuse — adaptée au soin).
+ *
+ * Trois corrections par rapport aux styles système :
+ *  1. On référence la **famille explicite** (`Comfortaa_700Bold`, etc.) au lieu
+ *     de `fontWeight`. Sur Android, `fontWeight` + police custom déclenche une
+ *     synthèse de graisse qui casse le rendu. La famille est la seule source de vérité.
+ *  2. `lineHeight` légèrement **augmenté (+1 à +2)** : Comfortaa a une hauteur
+ *     d'x plus grande, sans ça le texte paraît serré.
+ *  3. `letterSpacing` **moins négatif** sur h1/h2 (dessin large, le -0.6 initial
+ *     tassait les lettres). `label` gagne +0.2 en tracking pour aérer les capitales.
+ *
+ * Graisses disponibles : 400 / 500 / 600 / 700 uniquement.
+ * Comfortaa n'a **pas d'italique** — utilise `fontStyle` avec parcimonie.
+ */
 export const font = {
-  h1: { fontSize: 30, lineHeight: 36, fontWeight: '700' as const, letterSpacing: -0.6 },
-  h2: { fontSize: 22, lineHeight: 29, fontWeight: '700' as const, letterSpacing: -0.3 },
-  h3: { fontSize: 17, lineHeight: 23, fontWeight: '600' as const },
-  body: { fontSize: 15, lineHeight: 23, fontWeight: '400' as const },
-  small: { fontSize: 13, lineHeight: 19, fontWeight: '400' as const },
+  h1: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.3,
+  },
+  h2: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -0.1,
+  },
+  h3: {
+    fontFamily: 'Comfortaa_600SemiBold',
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  body: {
+    fontFamily: 'Comfortaa_400Regular',
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  small: {
+    fontFamily: 'Comfortaa_400Regular',
+    fontSize: 13,
+    lineHeight: 20,
+  },
   label: {
+    fontFamily: 'Comfortaa_700Bold',
     fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '700' as const,
-    letterSpacing: 1.1,
+    lineHeight: 16,
+    letterSpacing: 1.3,
     textTransform: 'uppercase' as const,
   },
 } as const;

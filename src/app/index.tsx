@@ -1,8 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-import { Bullet, Button, Card, Eyebrow } from '@/components/ui';
+import { Master } from '@/components/layout';
+import type { IconName } from '@/lib/navigation';
+import { questions } from '@/lib/triage';
 import { useTriage } from '@/store';
 import { colors, font, radius, shadow, space } from '@/theme';
 
@@ -13,240 +24,524 @@ function greeting(): string {
   return 'Bonsoir';
 }
 
+const STEPS = [
+  { n: '1', title: 'Tu réponds', text: 'Symptômes, durée, intensité.' },
+  { n: '2', title: 'On évalue', text: 'Vert, orange ou rouge.' },
+  { n: '3', title: 'Tu es orienté', text: 'Vers le bon médecin.' },
+] as const;
+
+const WIDE_MIN = 900;
+
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile } = useTriage();
+  const { profile, history, result } = useTriage();
+  const { width } = useWindowDimensions();
+  const isWide = width >= WIDE_MIN;
   const firstName = profile?.name?.trim().split(' ')[0] ?? '';
-  const initials =
-    profile?.name
-      ?.trim()
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('') || '＋';
+
+  const pendingCount = history.filter((h) => h.status === 'envoyee').length;
+  const showContext = !!result && result.level !== 'surveillance';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topbar}>
-          <View style={styles.brand}>
-            <View style={styles.logo}>
-              <Text style={styles.logoMark}>+</Text>
-            </View>
-            <View>
-              <Text style={styles.brandName}>DPS Minsanté</Text>
-              <Text style={styles.brandSub}>Téléconsultation · Cameroun</Text>
-            </View>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ouvrir mon profil"
-            onPress={() => router.push('/profil')}
-            style={styles.avatar}
-          >
-            <Text style={styles.avatarText}>{initials}</Text>
-          </Pressable>
-        </View>
-
+    <Master>
+      <View style={styles.container}>
         <Text style={styles.greeting}>
           {greeting()}
           {firstName ? `, ${firstName}` : ''}
         </Text>
         <Text style={styles.headline}>Comment te sens-tu aujourd’hui ?</Text>
         <Text style={styles.lede}>
-          Réponds à quelques questions courtes. Si c’est sérieux, on te met en relation avec un
-          médecin.
+          Quelques questions courtes pour t’orienter vers le bon soin.
         </Text>
 
-        <Card style={styles.heroCard}>
-          <Eyebrow>Pré-consultation</Eyebrow>
-          <Text style={styles.heroTitle}>Faire le point en 2 minutes</Text>
-          <Text style={styles.heroText}>
-            9 questions simples sur ce que tu ressens. Aucun compte à créer, rien à payer.
-          </Text>
-          <View style={styles.heroFooter}>
-            <Button label="Commencer l’évaluation" onPress={() => router.push('/triage')} />
+        {showContext ? (
+          <Pressable
+            onPress={() => router.push('/resultat')}
+            style={[
+              styles.contextBanner,
+              result.level === 'urgence' && styles.contextBannerUrgent,
+            ]}
+          >
+            <Ionicons
+              name={result.level === 'urgence' ? 'alert-circle' : 'information-circle'}
+              size={18}
+              color={result.level === 'urgence' ? colors.danger : colors.warning}
+            />
+            <Text style={styles.contextText} numberOfLines={2}>
+              {result.level === 'urgence'
+                ? 'Ton évaluation précédente indiquait une urgence. Reprends le parcours.'
+                : 'Ton évaluation suggère un avis médical. Reprends le parcours.'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+          </Pressable>
+        ) : null}
+
+        <View style={[styles.heroGrid, isWide && styles.heroGridWide]}>
+          <View style={[styles.hero, isWide && styles.heroWide]}>
+            <Text style={styles.heroEyebrow}>PRÉ-CONSULTATION</Text>
+            <Text style={styles.heroTitle}>Faire le point en 2 minutes</Text>
+            <Text style={styles.heroText}>
+              {questions.length} questions simples. Aucun compte requis pour commencer.
+            </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/triage')}
+              style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
+            >
+              <Text style={styles.heroCtaText}>Commencer l’évaluation</Text>
+              <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+            </Pressable>
+
+            <Text style={styles.heroNote}>
+              Ce n’est pas un diagnostic. En cas de danger immédiat, va au centre de santé le
+              plus proche.
+            </Text>
           </View>
-          <Text style={styles.heroNote}>
-            Ce n’est pas un diagnostic. En cas de danger immédiat, va au centre de santé le plus
-            proche.
-          </Text>
-        </Card>
 
-        <View style={styles.quickRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/historique')}
-            style={styles.quickItem}
-          >
-            <Text style={styles.quickTitle}>Mes demandes</Text>
-            <Text style={styles.quickText}>Suivre une consultation</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/espace-medecin')}
-            style={styles.quickItem}
-          >
-            <Text style={styles.quickTitle}>Espace médecin</Text>
-            <Text style={styles.quickText}>Demandes reçues</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.urgenceStrip}>
-          <View style={styles.urgenceDot} />
-          <Text style={styles.urgenceText}>
-            <Text style={styles.urgenceStrong}>Urgence vitale : </Text>
-            ne passe pas par l’application. Fais-toi accompagner aux urgences.
-          </Text>
+          <View style={[styles.side, isWide && styles.sideWide]}>
+            <QuickLink
+              icon="document-text-outline"
+              label="Mes demandes"
+              sub={
+                pendingCount > 0
+                  ? `${pendingCount} en attente`
+                  : 'Suivre une consultation'
+              }
+              highlight={pendingCount > 0}
+              onPress={() => router.push('/historique')}
+            />
+            <View style={styles.sideDivider} />
+            <QuickLink
+              icon="people-outline"
+              label="Médecins"
+              sub="Choisir un praticien"
+              onPress={() => router.push('/medecins')}
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Comment ça marche</Text>
-        <View style={styles.steps}>
-          <Step
-            index="1"
-            title="Tu réponds"
-            text="Symptômes, durée, intensité, signes d’alerte."
-          />
-          <Step
-            index="2"
-            title="On évalue"
-            text="Vert : surveillance à la maison. Orange : avis médical. Rouge : urgences."
-          />
-          <Step
-            index="3"
-            title="Tu es orienté"
-            text="Si besoin, tu choisis un médecin et tu lui envoies ton résumé."
-          />
+        <View style={styles.roadmapRow}>
+          {STEPS.map((step, i) => (
+            <Fragment key={step.n}>
+              <RoadmapStep step={step} index={i} />
+              {i < STEPS.length - 1 ? <RoadmapConnector index={i} /> : null}
+            </Fragment>
+          ))}
         </View>
 
-        <Card style={styles.infoCard}>
-          <Eyebrow>Prochainement</Eyebrow>
-          <Text style={styles.infoTitle}>La visio arrive à la prochaine étape</Text>
-          <Text style={styles.infoText}>
-            Cette version valide déjà le parcours : questions, orientation et dossier médecin.
-            L’appel vidéo et le paiement seront ajoutés ensuite.
-          </Text>
-          <View style={styles.infoBullets}>
-            <Bullet>Messagerie avec le médecin</Bullet>
-            <Bullet>Visio sécurisée</Bullet>
-            <Bullet>Ordonnance numérique</Bullet>
-          </View>
-        </Card>
-      </ScrollView>
-    </SafeAreaView>
+        <Text style={styles.footnote}>
+          Prochainement : visio sécurisée, messagerie avec le médecin, ordonnance numérique.
+        </Text>
+      </View>
+    </Master>
   );
 }
 
-function Step({ index, title, text }: { index: string; title: string; text: string }) {
+/* ------------------------------------------------------------------ */
+/*  Ligne d'action rapide                                              */
+/* ------------------------------------------------------------------ */
+
+function QuickLink({
+  icon,
+  label,
+  sub,
+  highlight,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  sub: string;
+  highlight?: boolean;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.step}>
-      <View style={styles.stepIndex}>
-        <Text style={styles.stepIndexText}>{index}</Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickRow, pressed && styles.quickRowPressed]}
+    >
+      <View style={[styles.quickIcon, highlight && styles.quickIconHighlight]}>
+        <Ionicons
+          name={icon}
+          size={20}
+          color={highlight ? colors.accent : colors.inkSoft}
+        />
       </View>
-      <View style={styles.stepBody}>
-        <Text style={styles.stepTitle}>{title}</Text>
-        <Text style={styles.stepText}>{text}</Text>
+      <View style={styles.quickBody}>
+        <Text style={styles.quickLabel}>{label}</Text>
+        <Text style={[styles.quickSub, highlight && styles.quickSubHighlight]}>
+          {sub}
+        </Text>
       </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Étape de roadmap — numéro + glow au hover                         */
+/* ------------------------------------------------------------------ */
+
+function RoadmapStep({
+  step,
+  index,
+}: {
+  step: (typeof STEPS)[number];
+  index: number;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+  const dotScale = useRef(new Animated.Value(0.3)).current;
+  const hoverProgress = useRef(new Animated.Value(0)).current;
+
+  const delay = 300 + index * 400;
+
+  // Animation d'apparition (une seule fois)
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(dotScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 90,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
+
+  // Animation au hover (0 → 1 en entrée, 1 → 0 en sortie)
+  useEffect(() => {
+    Animated.timing(hoverProgress, {
+      toValue: hovered ? 1 : 0,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [hovered, hoverProgress]);
+
+  const hoverScale = hoverProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.14],
+  });
+  const haloScale = hoverProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.65],
+  });
+
+  return (
+    <Pressable
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={styles.stepColumn}
+    >
+      <Animated.View
+        style={[styles.stepContent, { opacity, transform: [{ translateY }] }]}
+      >
+        <View style={styles.dotWrap}>
+          {/* Halo qui s'étend autour du dot au hover */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.halo,
+              { opacity: hoverProgress, transform: [{ scale: haloScale }] },
+            ]}
+          />
+          {/* Scale d'apparition (ressort) → wrapper extérieur */}
+          <Animated.View style={{ transform: [{ scale: dotScale }] }}>
+            {/* Scale de hover → wrapper intérieur */}
+            <Animated.View
+              style={[
+                styles.dot,
+                hovered && styles.dotHovered,
+                { transform: [{ scale: hoverScale }] },
+              ]}
+            >
+              <Text style={[styles.dotNum, hovered && styles.dotNumHovered]}>
+                {step.n}
+              </Text>
+            </Animated.View>
+          </Animated.View>
+        </View>
+        <Text style={[styles.stepTitle, hovered && styles.stepTitleHovered]}>
+          {step.title}
+        </Text>
+        <Text style={styles.stepText}>{step.text}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Connecteur animé entre deux étapes                                */
+/* ------------------------------------------------------------------ */
+
+function RoadmapConnector({ index }: { index: number }) {
+  const width = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(300 + index * 400 + 350),
+      Animated.timing(width, {
+        toValue: 100,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <View style={styles.connectorWrap}>
+      <Animated.View
+        style={[
+          styles.connectorLine,
+          {
+            width: width.interpolate({
+              inputRange: [0, 100],
+              outputRange: ['0%', '100%'],
+            }),
+          },
+        ]}
+      />
     </View>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Styles                                                             */
+/* ------------------------------------------------------------------ */
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.sand },
-  content: { paddingHorizontal: space.lg, paddingBottom: space.xxxl },
-  topbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  container: {
+    width: '100%',
+    maxWidth: 1000,
+    alignSelf: 'center',
+    paddingHorizontal: space.sm,
     paddingTop: space.sm,
+  },
+
+  /* ---- En-tête ---- */
+  greeting: {
+    ...font.small,
+    color: colors.muted,
+    marginTop: space.sm,
+    letterSpacing: 0.2,
+  },
+  headline: { ...font.h1, color: colors.ink, marginTop: space.xs },
+  lede: {
+    ...font.body,
+    color: colors.inkSoft,
+    marginTop: space.sm,
     marginBottom: space.xl,
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  logo: {
+
+  /* ---- Bandeau contextuel ---- */
+  contextBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+    marginBottom: space.md,
+  },
+  contextBannerUrgent: { backgroundColor: colors.dangerSoft },
+  contextText: { ...font.small, flex: 1, color: colors.ink },
+
+  /* ---- Hero grid ---- */
+  heroGrid: { gap: space.lg },
+  heroGridWide: { flexDirection: 'row', alignItems: 'stretch', gap: space.lg },
+
+  /* ---- Hero ---- */
+  hero: {
+    borderRadius: radius.lg,
+    padding: space.xl,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    ...shadow.soft,
+  },
+  heroWide: { flex: 3, justifyContent: 'space-between' },
+  heroEyebrow: { ...font.label, color: colors.primary },
+  heroTitle: { ...font.h2, color: colors.ink, marginTop: space.sm },
+  heroText: { ...font.body, color: colors.inkSoft, marginTop: space.xs },
+  heroCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: space.lg,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+  },
+  heroCtaPressed: { opacity: 0.92 },
+  heroCtaText: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  heroNote: {
+    ...font.small,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: space.lg,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+    lineHeight: 18,
+  },
+
+  /* ---- Side card ---- */
+  side: {
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    overflow: 'hidden',
+    ...shadow.soft,
+  },
+  sideWide: { flex: 2, justifyContent: 'center' },
+  sideDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.line,
+    marginLeft: 76,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.lg,
+    paddingHorizontal: space.lg,
+  },
+  quickRowPressed: { backgroundColor: colors.sandDeep },
+  quickIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.sand,
+  },
+  quickIconHighlight: { backgroundColor: colors.accentSoft },
+  quickBody: { flex: 1 },
+  quickLabel: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 15,
+    color: colors.ink,
+  },
+  quickSub: {
+    ...font.small,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  quickSubHighlight: {
+    color: colors.accent,
+    fontFamily: 'Comfortaa_600SemiBold',
+  },
+
+  /* ---- Roadmap ---- */
+  sectionTitle: {
+    ...font.h3,
+    color: colors.ink,
+    marginTop: space.xxxl,
+    marginBottom: space.xl,
+  },
+  roadmapRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  stepColumn: { flex: 1, alignItems: 'center' },
+  stepContent: { alignItems: 'center' },
+
+  /* Conteneur du dot : accueille le halo en absolute */
+  dotWrap: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  halo: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.accent,
+  },
+  dot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoMark: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginTop: -2 },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.line,
+  dotHovered: {
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
-  avatarText: { ...font.small, fontWeight: '700', color: colors.primary },
-  quickRow: { flexDirection: 'row', gap: space.md, marginTop: space.md },
-  quickItem: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: space.md,
+  dotNum: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
   },
-  quickTitle: { ...font.small, fontWeight: '700', color: colors.ink },
-  quickText: { ...font.small, color: colors.muted, fontSize: 11, marginTop: 2 },
-  brandName: { ...font.h3, color: colors.ink },
-  brandSub: { ...font.small, color: colors.muted, fontSize: 11 },
-  greeting: { ...font.small, color: colors.muted, marginBottom: space.xs },
-  headline: { ...font.h1, color: colors.ink },
-  lede: { ...font.body, color: colors.inkSoft, marginTop: space.sm, marginBottom: space.xl },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: space.xl,
-    ...shadow.card,
+  dotNumHovered: { color: '#FFFFFF' },
+  stepTitle: {
+    fontFamily: 'Comfortaa_700Bold',
+    fontSize: 14,
+    color: colors.ink,
+    textAlign: 'center',
+    marginTop: space.md,
   },
-  heroTitle: { ...font.h2, color: colors.ink },
-  heroText: { ...font.body, color: colors.inkSoft, marginTop: space.sm },
-  heroFooter: { marginTop: space.lg },
-  heroNote: { ...font.small, color: colors.muted, marginTop: space.md, fontSize: 12 },
-  urgenceStrip: {
-    flexDirection: 'row',
-    gap: space.md,
-    alignItems: 'flex-start',
-    backgroundColor: colors.dangerSoft,
-    borderRadius: radius.md,
-    padding: space.lg,
-    marginTop: space.lg,
+  stepTitleHovered: { color: colors.accent },
+  stepText: {
+    ...font.small,
+    fontSize: 12,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginTop: 4,
   },
-  urgenceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.danger,
-    marginTop: 6,
-  },
-  urgenceText: { ...font.small, color: colors.danger, flex: 1 },
-  urgenceStrong: { fontWeight: '700' },
-  sectionTitle: { ...font.h3, color: colors.ink, marginTop: space.xxl, marginBottom: space.md },
-  steps: { gap: space.md },
-  step: { flexDirection: 'row', gap: space.md },
-  stepIndex: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: colors.sandDeep,
-    alignItems: 'center',
+
+  /* ---- Connecteur (aligné sur dot 40) ---- */
+  connectorWrap: {
+    width: 32,
+    height: 2,
+    marginTop: 19, // (40 - 2) / 2
     justifyContent: 'center',
   },
-  stepIndexText: { ...font.small, fontWeight: '700', color: colors.primary },
-  stepBody: { flex: 1 },
-  stepTitle: { ...font.body, fontWeight: '700', color: colors.ink },
-  stepText: { ...font.small, color: colors.inkSoft, marginTop: 2 },
-  infoCard: { marginTop: space.xxl },
-  infoTitle: { ...font.h3, color: colors.ink },
-  infoText: { ...font.small, color: colors.inkSoft, marginTop: space.sm },
-  infoBullets: { marginTop: space.md },
+  connectorLine: {
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.line,
+  },
+
+  footnote: {
+    ...font.small,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: space.xl,
+    marginBottom: space.xl,
+    lineHeight: 17,
+  },
 });
