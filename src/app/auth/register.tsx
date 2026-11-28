@@ -1,13 +1,13 @@
-import { RegisterForm } from '@/components/auth/RegisterForm';
-import { AuthShell } from '@/components/layout/AuthShell';
+import { AuthCard } from "@/components/auth/AuthCard";
+import { RegisterForm } from "@/components/auth/RegisterForm";
+import { Master } from "@/components/layout";
 
 export default function RegisterScreen() {
   return (
-    <AuthShell
-      maxWidth={560}
-      quote="Chaque personne mérite un accès simple et rapide à des soins de qualité."
-    >
-      <RegisterForm />
-    </AuthShell>
+    <Master title="Inscription">
+      <AuthCard maxWidth={560}>
+        <RegisterForm />
+      </AuthCard>
+    </Master>
   );
 }

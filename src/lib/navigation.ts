@@ -13,6 +13,7 @@ export type IconName = ComponentProps<typeof Ionicons>['name'];
 export const ROUTES = {
   login: '/auth/login',
   register: '/auth/register',
+  dashboard: '/dashboard',
 } as const;
 
 /* ------------------------------------------------------------------ */

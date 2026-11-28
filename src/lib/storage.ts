@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   history: 'dps.history.v1',
   profile: 'dps.profile.v1',
   registration: 'dps.registration.v1',
+  evaluations: 'dps.evaluations.v1',
 };
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {

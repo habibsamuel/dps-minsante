@@ -1,13 +1,13 @@
+import { AuthCard } from '@/components/auth/AuthCard';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { AuthShell } from '@/components/layout/AuthShell';
+import { Master } from '@/components/layout';
 
 export default function LoginScreen() {
   return (
-    <AuthShell
-      maxWidth={460}
-      quote="Retrouve ton dossier et tes consultations en quelques secondes."
-    >
-      <LoginForm />
-    </AuthShell>
+    <Master title="Connexion">
+      <AuthCard maxWidth={460}>
+        <LoginForm />
+      </AuthCard>
+    </Master>
   );
 }
