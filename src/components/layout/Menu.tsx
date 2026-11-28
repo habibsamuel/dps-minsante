@@ -20,7 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LANGUAGES, useLanguage, type Language, type LanguageCode } from '@/lib/language';
-import { MENU_ITEMS, type IconName, type MenuItem } from '@/lib/navigation';
+import { MENU_ITEMS, ROUTES, type IconName, type MenuItem } from '@/lib/navigation';
 import { useTriage } from '@/store';
 import { colors, shadow } from '@/theme';
 
@@ -55,19 +55,17 @@ function useNav() {
     (item) => !item.roles || (profile && item.roles.includes(profile.role)),
   );
 
+  // Bouton principal : inscription si déconnecté.
   const cta: { label: string; icon: IconName; href: Href } = !profile
-    ? { label: 'Créer mon compte', icon: 'person-add', href: '/auth' }
+    ? { label: 'Créer mon compte', icon: 'person-add', href: ROUTES.register }
     : profile.role === 'medecin'
       ? { label: 'Espace médecin', icon: 'medkit', href: '/espace-medecin' }
       : { label: 'Nouvelle évaluation', icon: 'pulse', href: '/triage' };
 
+  // Bouton rond : connexion si déconnecté, profil sinon.
   const account: { label: string; icon: IconName; href: Href } = profile
     ? { label: 'Mon profil', icon: 'person', href: '/profil' }
-    : {
-        label: 'Se connecter',
-        icon: 'log-in-outline',
-        href: { pathname: '/auth', params: { mode: 'connexion' } },
-      };
+    : { label: 'Se connecter', icon: 'log-in-outline', href: ROUTES.login };
 
   const isActive = (href?: Href) => {
     if (typeof href !== 'string') return false;
@@ -162,7 +160,7 @@ function useRotation(on: boolean) {
   return value.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
 }
 
-/** Fade doux du fond au survol — aucun bord, juste un tint léger. */
+/** Fade doux du fond au survol : aucun bord, juste un tint léger. */
 function useHoverTint(on: boolean) {
   const [value] = useState(() => new Animated.Value(on ? 1 : 0));
   useEffect(() => {
@@ -170,7 +168,7 @@ function useHoverTint(on: boolean) {
       toValue: on ? 1 : 0,
       duration: 180,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: NATIVE,
     }).start();
   }, [on, value]);
   return value;
@@ -364,7 +362,7 @@ function DeskLang() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  DESKTOP — space-between : logo | liens | actions équidistants     */
+/*  DESKTOP : logo | liens | actions (space-between)                   */
 /* ------------------------------------------------------------------ */
 
 function DesktopMenu({ nav }: { nav: Nav }) {
@@ -377,10 +375,10 @@ function DesktopMenu({ nav }: { nav: Nav }) {
   return (
     <BarShell>
       <View style={styles.deskRow}>
-        {/* 1 — Logo à gauche */}
+        {/* 1 : Logo à gauche */}
         <Logo size={100} />
 
-        {/* 2 — Liens au centre (gap égal gauche/droite via space-between) */}
+        {/* 2 : Liens au centre */}
         <View style={styles.deskLinks}>
           {links.map((item) =>
             item.children?.length ? (
@@ -408,7 +406,7 @@ function DesktopMenu({ nav }: { nav: Nav }) {
           )}
         </View>
 
-        {/* 3 — Actions à droite */}
+        {/* 3 : Actions à droite */}
         <View style={styles.deskActions}>
           <DeskLang />
           <AccountButton
@@ -446,10 +444,7 @@ function DeskLink({
       onHoverOut={() => setHovered(false)}
       style={styles.deskLinkWrap}
     >
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.deskLinkTint, { opacity: tintOpacity }]}
-      />
+      <Animated.View style={[styles.deskLinkTint, { opacity: tintOpacity }]} />
       <Ionicons name={item.icon} size={17} color={color} />
       <Text style={[styles.deskLabel, { color }]} numberOfLines={1}>
         {item.label}
@@ -477,9 +472,11 @@ function DeskGroup({
 }) {
   const on = open || active;
   const tintOpacity = useHoverTint(on);
+  const rotate = useRotation(open);
   const color = on ? GREEN_DARK : GREEN;
 
   return (
+    // Le survol du déclencheur ET du panneau garde le sous-menu ouvert.
     <Pressable accessible={false} onHoverIn={onOpen} onHoverOut={onClose} style={styles.group}>
       <Pressable
         accessibilityRole="button"
@@ -487,17 +484,14 @@ function DeskGroup({
         onPress={() => (open ? onClose() : onOpen())}
         style={styles.deskLinkWrap}
       >
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.deskLinkTint, { opacity: tintOpacity }]}
-        />
+        <Animated.View style={[styles.deskLinkTint, { opacity: tintOpacity }]} />
         <Ionicons name={item.icon} size={17} color={color} />
         <Text style={[styles.deskLabel, { color }]} numberOfLines={1}>
           {item.label}
         </Text>
-        <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
+        <Animated.View style={{ transform: [{ rotate }] }}>
           <Ionicons name="chevron-down" size={11} color={color} />
-        </View>
+        </Animated.View>
       </Pressable>
 
       {open ? (
@@ -929,7 +923,7 @@ const styles = StyleSheet.create({
   },
   langNameOn: { fontFamily: 'Comfortaa_700Bold' },
 
-  /* ---- Desktop row : 3 blocs équidistants via space-between ---- */
+  /* ---- Desktop ---- */
   deskRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -963,6 +957,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: 999,
     backgroundColor: TINT,
+    pointerEvents: 'none',
   },
   deskLabel: {
     fontFamily: 'Comfortaa_600SemiBold',
@@ -1012,7 +1007,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* ---- Mobile row ---- */
+  /* ---- Mobile ---- */
   mobRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -104,3 +104,50 @@ export async function verifyOtp(phone: string, token: string) {
   const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
   return error ? { ok: false as const, message: 'Code incorrect ou expiré.' } : { ok: true as const };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Étapes du formulaire d'inscription                                 */
+/* ------------------------------------------------------------------ */
+
+export type FieldErrors = Partial<Record<keyof RegisterData, string>>;
+export type StepId = 'type' | 'identity' | 'pro' | 'verify';
+
+/** Patient : 3 étapes. Praticien, pharmacie, FOSA : 4 étapes. */
+export const stepsFor = (type: AccountType): StepId[] =>
+  isPro(type) ? ['type', 'identity', 'pro', 'verify'] : ['type', 'identity', 'verify'];
+
+export function stepLabel(id: StepId, type: AccountType): string {
+  if (id === 'type') return 'Profil';
+  if (id === 'identity') return 'Identité';
+  if (id === 'verify') return 'Vérification';
+  return type === 'praticien' ? 'Exercice' : 'Établissement';
+}
+
+/** Valide une seule étape. `requireTerms` : l'étape juste avant le code SMS. */
+export function validateStep(step: StepId, f: RegisterData, requireTerms: boolean): FieldErrors {
+  const e: FieldErrors = {};
+  const organisation = f.type === 'pharmacie' || f.type === 'fosa';
+
+  if (step === 'identity') {
+    if (f.name.trim().length < 3) {
+      e.name = organisation ? 'Indique le nom du responsable.' : 'Indique ton nom complet.';
+    }
+    if (!normalizePhone(f.phone)) e.phone = 'Numéro invalide. Exemple : 6XX XX XX XX';
+    if (f.city.trim().length < 2) e.city = 'Indique ta ville.';
+  }
+
+  if (step === 'pro') {
+    if (f.type === 'praticien' && !f.profession) e.profession = 'Choisis ta profession.';
+    if (organisation) {
+      if ((f.establishment ?? '').trim().length < 2) e.establishment = 'Indique le nom.';
+      if (f.type === 'fosa' && !f.fosaKind) e.fosaKind = 'Choisis le type de formation sanitaire.';
+      if ((f.address ?? '').trim().length < 3) e.address = 'Indique le quartier ou l’adresse.';
+    }
+    if (isPro(f.type) && (f.licenseNumber ?? '').trim().length < 3) {
+      e.licenseNumber = `Indique ton ${LICENSE_LABEL[f.type as Exclude<AccountType, 'patient'>].toLowerCase()}.`;
+    }
+  }
+
+  if (requireTerms && !f.acceptedTerms) e.acceptedTerms = 'Accepte les conditions pour continuer.';
+  return e;
+}

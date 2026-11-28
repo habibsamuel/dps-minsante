@@ -7,6 +7,15 @@ import type { Role } from '@/store';
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /* ------------------------------------------------------------------ */
+/*  Routes d'authentification (source unique)                          */
+/* ------------------------------------------------------------------ */
+
+export const ROUTES = {
+  login: '/auth/login',
+  register: '/auth/register',
+} as const;
+
+/* ------------------------------------------------------------------ */
 /*  Menu principal                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -90,7 +99,8 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     links: [
       { key: 'history', label: 'Mes demandes', href: '/historique' },
       { key: 'profile', label: 'Mon profil', href: '/profil' },
-      { key: 'auth', label: 'Connexion / Inscription', href: '/auth' },
+      { key: 'login', label: 'Connexion', href: ROUTES.login },
+      { key: 'register', label: 'Inscription', href: ROUTES.register },
       { key: 'pro', label: 'Espace médecin', href: '/espace-medecin' },
     ],
   },

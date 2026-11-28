@@ -8,3 +8,9 @@ export function initialsOf(name?: string | null): string {
     .join('');
   return value || '＋';
 }
+
+/** "+2376XXXXXXXX" → "+237 6XX XX XX XX" */
+export function formatPhone(phone: string | null): string {
+  if (!phone) return '';
+  return phone.replace(/^(\+237)(\d)(\d{2})(\d{2})(\d{2})(\d{2})$/, '$1 $2$3 $4 $5 $6');
+}
